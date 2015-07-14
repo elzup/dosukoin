@@ -20,12 +20,6 @@ config =
     destination: './public/javascripts/'
     option:
       bare: true
-  app_coffee:
-    source: './app.coffee'
-    watch: './app.coffee'
-    destination: './'
-    option:
-      bare: true
   stylus:
     source: './src/stylus'
     watch: './src/stylus/*.styl'
@@ -60,13 +54,6 @@ gulp.task 'script', ->
     .on 'error', handleError
     .pipe gulp.dest config.scripts.destination
 
-gulp.task 'app_coffee', ->
-  gulp
-  .src config.app_coffee.watch
-  .pipe $.coffee()
-  .on 'error', handleError
-  .pipe gulp.dest config.app_coffee.destination
-
 gulp.task "style", ->
   gulp
     .src config.stylus.watch
@@ -94,7 +81,6 @@ gulp.task "sass", ->
 gulp.task 'watch', ->
   gulp.watch config.scripts.watch, ['script']
   gulp.watch config.sass.watch, ['sass']
-  gulp.watch config.app_coffee.watch, ['app_coffee']
 
 #load
-gulp.task 'default', ["script", "sass", "app_coffee"]
+gulp.task 'default', ["script", "sass"]

@@ -5,7 +5,6 @@ logger = require('morgan')
 cookieParser = require('cookie-parser')
 bodyParser = require('body-parser')
 routes = require('./routes/index')
-users = require('./routes/users')
 app = express()
 
 # view engine setup
@@ -20,7 +19,6 @@ app.use bodyParser.urlencoded(extended: false)
 app.use cookieParser()
 app.use express.static(path.join(__dirname, 'public'))
 app.use '/', routes
-app.use '/users', users
 
 # catch 404 and forward to error handler
 app.use (req, res, next) ->
@@ -49,10 +47,12 @@ app.use (err, req, res, next) ->
     error: {}
   return
 
-###*
+###
 # Module dependencies.
 ###
 
+# app = require('../app')
+# debug = require('debug')('dosukoin:server')('socket') 使える?
 debug = require('debug')('dosukoin:server')
 http = require('http')
 
@@ -110,16 +110,12 @@ onListening = ->
 
 app.set 'port', port
 
+
 ###*
 # Create HTTP server.
 ###
 
 server = http.createServer(app)
-
-###*
-# Listen on provided port, on all network interfaces.
-###
-
 server.listen port
 server.on 'error', onError
 server.on 'listening', onListening
