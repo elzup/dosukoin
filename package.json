@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "coffee ./app.coffee"
+    "start": "coffee ./app/main.coffee"
   },
   "dependencies": {
     "coffee": "^1.1.0",
