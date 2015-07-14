@@ -6,11 +6,13 @@ game = null
 
 class Player
   @LIFE_START = 3
+  @V_RATIO = 3
 
-  constructor: (@id, @x, @y) ->
+  constructor: (@_id, @x, @y) ->
     @vx = 0
     @vy = 0
-    @dire = 0
+    @rad = 0
+    @pow = 0
 
     @sprite = new Sprite(32, 32)
     @sprite.image = core.assets['images\/chara1.png']
@@ -19,9 +21,27 @@ class Player
 
     @game_init()
 
+  # 各ゲームの開始時の初期化
   game_init: ->
     @kill = 0
     @life = Player.LIFE_START
+
+  update_dire: (@rad, @pow) ->
+    if @pow == 0
+      @vx = 0
+      @vy = 0
+      return
+    @vx = Math.sin(@rad) * Player.V_RATIO
+    @vy = Math.cos(@rad) * Player.V_RATIO
+    return
+
+  onenterframe: ->
+    @move(@x + @vx, @y + @vy)
+
+  move: (@x, @y) ->
+    @sprite.moveTo(@x, @y)
+
+
 
 class Game
   constructor: ->
@@ -37,6 +57,11 @@ class Game
     delete @players[id]
     true
 
+  onenterframe: ->
+    for id, p of @players
+      p.onenterframe()
+
+
 $ ->
   ### enchant.js ###
   enchant()
@@ -49,6 +74,9 @@ $ ->
   core.onload = ->
     console.log "core onload end"
     return
+
+  core.onenterframe = ->
+    game.onenterframe()
 
   core.start()
 
@@ -76,6 +104,7 @@ $ ->
     console.log members
 
   socket.on 'move', (data) ->
+    game.players[data.id].update_dire(data.rad, data.pow)
     console.log "move"
     console.log data
 
