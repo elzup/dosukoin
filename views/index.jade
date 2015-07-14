@@ -1,11 +1,12 @@
 extends layout
 
 block headers
+  link(rel='stylesheet', href='/normalize.css/normalize.css')
   link(rel='stylesheet', href='/stylesheets/style.css')
+  script(src='/jquery/dist/jquery.min.js')
   script(src="/socket.io/socket.io.js")
+  script(src='/enchant.js-builds/build/enchant.js')
   script(src='/javascripts/script.js')
 
 block content
-  h1= title
-  p Welcome to #{title}
-
+  body

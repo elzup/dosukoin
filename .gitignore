@@ -12,6 +12,8 @@ Desktop.ini
 .directory
 *~
 
+# bower
+bower_components/
 
 # npm
 node_modules
