@@ -41,6 +41,12 @@ class Player
   move: (@x, @y) ->
     @sprite.moveTo(@x, @y)
 
+  shake: ->
+    return
+
+  close: ->
+    console.log("remove sprite")
+    core.rootScene.removeChild(@sprite)
 
 
 class Game
@@ -52,8 +58,9 @@ class Game
     @players[id] = new Player(id, 100, 100)
 
   remove_player: (id) ->
-    if id not in @players
+    if id not of @players
       return false
+    @players[id].close()
     delete @players[id]
     true
 
@@ -83,7 +90,7 @@ $ ->
 
 
   ### socket.io ###
-  socket = io.connect('http://localhost:3000')
+  socket = io.connect()
 
   socket.emit 'new',
     room: 'top'
@@ -95,16 +102,25 @@ $ ->
   socket.on 'join', (data) ->
     game.add_player(data.id)
     console.log "join user: " + data.id
-    console.log game.players
+    console.log game.player
 
   socket.on 'leave', (data) ->
-    if not game.remove_player(data.id)
+    if not data.id of game.players
       return
+    game.remove_player(data.id)
     console.log "leave user: " + data.id
-    console.log members
+    console.log game.players
 
   socket.on 'move', (data) ->
+    if not data.id of game.players
+      return
     game.players[data.id].update_dire(data.rad, data.pow)
     console.log "move"
     console.log data
 
+  socket.on 'shake', (data) ->
+    if not data.id of game.players
+      return
+    game.players[data.id].shake()
+    console.log "shake"
+    console.log data

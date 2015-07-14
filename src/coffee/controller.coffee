@@ -21,6 +21,7 @@ $ ->
     game.rootScene.addChild(controller)
 
     is_touch = false
+    is_touch_pre = false
     ex = null
     ey = null
 
@@ -28,6 +29,9 @@ $ ->
       if is_touch
         [dx, dy, rad, pow] = get_vec(ex, ey)
         emit_move(rad, pow)
+      if is_touch_pre and not is_touch
+        emit_stop()
+      is_touch_pre = is_touch
 
     game.rootScene.addEventListener Event.TOUCH_START, (e) ->
       ex = e.x
@@ -55,7 +59,7 @@ $ ->
   game.start()
 
   ### socket.io ###
-  socket = io.connect('http://localhost:3000')
+  socket = io.connect()
 
   socket.emit 'new',
     room: 'user'
@@ -71,7 +75,11 @@ $ ->
       pow: pow
     console.log(rad, pow)
 
+  emit_stop = ->
+    emit_move(0, 0)
+
   emit_shake = ->
+    console.log("shake")
     socket.emit 'shake'
 
   ($ this).gShake ->

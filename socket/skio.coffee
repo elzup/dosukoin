@@ -23,7 +23,13 @@ skio = (server, io) ->
 
     socket.on 'move', (data) ->
       data.id = socket.id
+      # console.log "move: " + socket.id
       io.to('top').emit 'move', data
+
+    socket.on 'shake', ->
+      # console.log "shake: " + socket.id
+      io.to('top').emit 'shake',
+        id: socket.id
 
     socket.on 'disconnect', ->
       console.log 'exit : ' + socket.id + " [" + socket.nsp.name + "]"
