@@ -9,15 +9,25 @@ skio = (server, io) ->
     console.log('listening !!')
 
   io.on 'connection', (socket) ->
-    socket.on 'new', ->
-      console.log 'new : ' + socket.id
+
+    # TODO: data.room => socket.nsp.name
+    socket.on 'new', (data) ->
+      console.log 'new : ' + socket.id + " [" + data.room + "]"
       # 送信元のみに返す
-      io.to(socket.id).emit 'init_res'
+      socket.join(data.room)
+      if data.room == 'user'
+        io.to('top').emit  'join',
+          id: socket.id
+
+      io.to(socket.id).emit 'init_res',
+        id: socket.id
 
     socket.on 'disconnect', ->
-      console.log 'exit : ' + socket.id
-      data =
+      console.log 'exit : ' + socket.id + " [" + socket.nsp.name + "]"
+      # NOTE: room から自動で socket.id は削除されるのか？
+      # NOTE: ユーザの切断のみ emit する？
+      # if ROOM == '/c'
+      io.to('top').emit 'leave',
         id: socket.id
-      io.emit 'removeuser', data
 
 module.exports = skio

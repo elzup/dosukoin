@@ -29,23 +29,9 @@ $ ->
   socket = io.connect('http://localhost:3000')
 
   socket.emit 'new',
-    room: 'top'
+    room: 'user'
+  # TODO: remove debug outputs
   console.log('socket connect try')
 
   socket.on 'init_res', (data) ->
     console.log('socket connected id' + data.id)
-
-  members = []
-  socket.on 'join', (data) ->
-    members.push(data.id)
-    console.log "join user: " + data.id
-    console.log members
-
-  socket.on 'leave', (data) ->
-    id = members.indexOf(data.id)
-    if id == -1
-      return
-    delete members[id]
-    console.log "leave user: " + data.id
-    console.log members
-
