@@ -1,25 +1,23 @@
 $ ->
   ### enchant.js ###
   enchant()
-  MAP_WIDTH = 1024
-  MAP_HEIGHT = 512
+  MAP_WIDTH = 320
+  MAP_HEIGHT = 400
   game = new Core(MAP_WIDTH, MAP_HEIGHT)
-  game.preload "images/chara1.png"
-  game.fps = 20
+  game.preload "images/apad.png"
+  game.fps = 10
 
   game.onload = ->
     console.log "game onload"
-    bear = new Sprite(32, 32)
+    controller = new Sprite(100, 100)
     console.log game.assets
-    bear.image = game.assets['images\/chara1.png']
-    game.rootScene.addChild(bear)
-    bear.frame = [6, 6, 7, 7]
+    controller.image = game.assets['images/apad.png']
+    # controller.scale(controller.width, controller.height)
+    scale_ratio = MAP_WIDTH / controller.width
+    controller.scale(scale_ratio, scale_ratio)
+    controller.moveTo(MAP_WIDTH / 2 - 50, MAP_HEIGHT / 2, 50)
+    game.rootScene.addChild(controller)
 
-    bear.tl.moveBy(288, 0, 10)
-    .scaleTo(-1, 1, 10)
-    .moveBy(-288, 0, 90)
-    .scaleTo(1, 1, 10)
-    .loop()
     console.log "game onload end"
     return
 
@@ -35,3 +33,6 @@ $ ->
 
   socket.on 'init_res', (data) ->
     console.log('socket connected id' + data.id)
+
+  ($ this).gShake ->
+    # TODO: emit shake

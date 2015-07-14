@@ -6,13 +6,11 @@ router = express.Router()
 router.get '/', (req, res, next) ->
   res.render 'index',
     title: 'ドスコin!'
-    js_filename: 'script'
   return
 
 router.get '/c', (req, res, next) ->
-  res.render 'index',
+  res.render 'controller',
     title: 'コントーラー ドスコin!'
-    js_filename: 'controller'
   return
 
 module.exports = router
