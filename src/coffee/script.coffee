@@ -49,3 +49,7 @@ $ ->
     console.log "leave user: " + data.id
     console.log members
 
+  socket.on 'move', (data) ->
+    console.log "move"
+    console.log data
+

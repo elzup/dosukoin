@@ -18,9 +18,12 @@ skio = (server, io) ->
       if data.room == 'user'
         io.to('top').emit  'join',
           id: socket.id
-
       io.to(socket.id).emit 'init_res',
         id: socket.id
+
+    socket.on 'move', (data) ->
+      data.id = socket.id
+      io.to('top').emit 'move', data
 
     socket.on 'disconnect', ->
       console.log 'exit : ' + socket.id + " [" + socket.nsp.name + "]"

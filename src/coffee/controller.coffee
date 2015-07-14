@@ -15,11 +15,40 @@ $ ->
     # controller.scale(controller.width, controller.height)
     scale_ratio = MAP_WIDTH / controller.width
     controller.scale(scale_ratio, scale_ratio)
-    controller.moveTo(MAP_WIDTH / 2 - 50, MAP_HEIGHT / 2, 50)
+    controller.moveTo(MAP_WIDTH / 2 - 50, MAP_HEIGHT / 2 - 50)
     game.rootScene.addChild(controller)
+
+    is_touch = false
+    ex = null
+    ey = null
+
+    game.rootScene.addEventListener Event.ENTER_FRAME, () ->
+      if is_touch
+        [dx, dy, rad, pow] = get_vec(ex, ey)
+        emit_move(rad, pow)
+
+    game.rootScene.addEventListener Event.TOUCH_START, (e) ->
+      ex = e.x
+      ey = e.y
+      is_touch = true
+    game.rootScene.addEventListener Event.TOUCH_END, (e) ->
+      is_touch = false
+
+    game.rootScene.addEventListener Event.TOUCH_MOVE, (e) ->
+      ex = e.x
+      ey = e.y
 
     console.log "game onload end"
     return
+
+  get_vec = (x, y) ->
+    dx = x - MAP_WIDTH / 2
+    dy = y - MAP_HEIGHT / 2
+    rad = Math.atan2(dx, dy)
+    va = ElzupUtils.vec_maguniture(dx, dy)
+    rad = parseInt(rad * 100) / 100
+    pow = ElzupUtils.clamp(parseInt(va), 100)
+    return [dx, dy, rad, pow]
 
   game.start()
 
@@ -34,5 +63,14 @@ $ ->
   socket.on 'init_res', (data) ->
     console.log('socket connected id' + data.id)
 
+  emit_move = (rad, pow) ->
+    socket.emit 'move',
+      rad: rad
+      pow: pow
+    console.log(rad, pow)
+
+  emit_shake = ->
+    socket.emit 'shake'
+
   ($ this).gShake ->
-    # TODO: emit shake
+    emit_shake()
