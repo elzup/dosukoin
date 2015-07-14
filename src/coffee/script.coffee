@@ -1,29 +1,58 @@
+MAP_WIDTH = 1024
+MAP_HEIGHT = 512
+
+core = null
+game = null
+
+class Player
+  @LIFE_START = 3
+
+  constructor: (@id, @x, @y) ->
+    @vx = 0
+    @vy = 0
+    @dire = 0
+
+    @sprite = new Sprite(32, 32)
+    @sprite.image = core.assets['images\/chara1.png']
+    @sprite.moveTo(@x, @y)
+    core.rootScene.addChild(@sprite)
+
+    @game_init()
+
+  game_init: ->
+    @kill = 0
+    @life = Player.LIFE_START
+
+class Game
+  constructor: ->
+    @players = {}
+
+  add_player: (id) ->
+    # TODO: 100 -> random value
+    @players[id] = new Player(id, 100, 100)
+
+  remove_player: (id) ->
+    if id not in @players
+      return false
+    delete @players[id]
+    true
+
 $ ->
   ### enchant.js ###
   enchant()
-  MAP_WIDTH = 1024
-  MAP_HEIGHT = 512
-  game = new Core(MAP_WIDTH, MAP_HEIGHT)
-  game.preload "images/chara1.png"
-  game.fps = 20
+  core = new Core(MAP_WIDTH, MAP_HEIGHT)
+  core.preload "images/chara1.png"
+  core.fps = 20
 
-  game.onload = ->
-    console.log "game onload"
-    bear = new Sprite(32, 32)
-    console.log game.assets
-    bear.image = game.assets['images\/chara1.png']
-    game.rootScene.addChild(bear)
-    bear.frame = [6, 6, 7, 7]
+  game = new Game
 
-    bear.tl.moveBy(288, 0, 10)
-    .scaleTo(-1, 1, 10)
-    .moveBy(-288, 0, 90)
-    .scaleTo(1, 1, 10)
-    .loop()
-    console.log "game onload end"
+  core.onload = ->
+    console.log "core onload end"
     return
 
-  game.start()
+  core.start()
+
+
 
   ### socket.io ###
   socket = io.connect('http://localhost:3000')
@@ -35,17 +64,14 @@ $ ->
   socket.on 'init_res', (data) ->
     console.log('socket connected id' + data.id)
 
-  members = []
   socket.on 'join', (data) ->
-    members.push(data.id)
+    game.add_player(data.id)
     console.log "join user: " + data.id
-    console.log members
+    console.log game.players
 
   socket.on 'leave', (data) ->
-    id = members.indexOf(data.id)
-    if id == -1
+    if not game.remove_player(data.id)
       return
-    delete members[id]
     console.log "leave user: " + data.id
     console.log members
 

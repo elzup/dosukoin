@@ -1,8 +1,10 @@
+MAP_WIDTH = 320
+MAP_HEIGHT = 400
+
 $ ->
   ### enchant.js ###
   enchant()
-  MAP_WIDTH = 320
-  MAP_HEIGHT = 400
+
   game = new Core(MAP_WIDTH, MAP_HEIGHT)
   game.preload "images/apad.png"
   game.fps = 10
