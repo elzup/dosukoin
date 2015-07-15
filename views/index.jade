@@ -3,10 +3,20 @@ extends layout
 block headers
   link(rel='stylesheet', href='/normalize.css/normalize.css')
   link(rel='stylesheet', href='/stylesheets/style.css')
+  link(rel='stylesheet', href='/stylesheets/top.css')
   script(src='/jquery/dist/jquery.min.js')
   script(src="/socket.io/socket.io.js")
   script(src='/enchant.js-builds/build/enchant.js')
+  script(src='/jquery-qrcode/jquery.qrcode.min.js')
+  script(src="/javascripts/set_qr.js")
   script(src='/javascripts/script.js')
 
 block content
   body
+    div#enchant-stage
+    section.infos
+      section#qr-box
+        h3
+          | スマホで参加!
+        div#qr
+      section#users-box

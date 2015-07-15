@@ -15,7 +15,7 @@ class Player
     @pow = 0
 
     @sprite = new Sprite(32, 32)
-    @sprite.image = core.assets['images\/chara1.png']
+    @sprite.image = core.assets['/images/chara1.png']
     @sprite.moveTo(@x, @y)
     core.rootScene.addChild(@sprite)
 
@@ -73,7 +73,7 @@ $ ->
   ### enchant.js ###
   enchant()
   core = new Core(MAP_WIDTH, MAP_HEIGHT)
-  core.preload "images/chara1.png"
+  core.preload "/images/chara1.png"
   core.fps = 20
 
   game = new Game
