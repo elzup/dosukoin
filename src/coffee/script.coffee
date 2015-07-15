@@ -88,7 +88,6 @@ $ ->
   core.start()
 
 
-
   ### socket.io ###
   socket = io.connect()
 
@@ -101,6 +100,11 @@ $ ->
 
   socket.on 'join', (data) ->
     game.add_player(data.id)
+    # pageのユーザリストにも追加
+    ($ '#users-box').append(($ '<dir/>',
+      class: "user"
+      "user-id": data.id
+    ).append(data.id))
     console.log "join user: " + data.id
     console.log game.player
 
@@ -108,6 +112,7 @@ $ ->
     if not data.id of game.players
       return
     game.remove_player(data.id)
+    ($ ".user[user-id=#{data.id}]").remove()
     console.log "leave user: " + data.id
     console.log game.players
 
