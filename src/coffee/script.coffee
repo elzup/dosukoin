@@ -20,8 +20,8 @@ BlockType =
   TILE: 5
 Frame =
   Stand: 0
-  Walk1: 1
-  Walk2: 2
+  Walk: 1
+  Attack: 2
   Damage: 3
   None: -1
 
@@ -49,16 +49,16 @@ class Player
   updateState: (@state) ->
     @sprite.frame = [
       Frame.Stand
-      Frame.Walk1
+      Frame.Attack
       [Frame.Damage, Frame.Damage, Frame.None, Frame.None]
-      [Frame.Walk1, Frame.None]
+      [Frame.Walk, Frame.None]
     ][@state]
 
   updateMoveState: ->
     if @state != Player.State.Normal
       return
     if @moveState()
-      @sprite.frame = [Frame.Walk1, Frame.Walk2][core.frame % 2]
+      @sprite.frame = [Frame.Stand, Frame.Walk][core.frame % 8 / 4]
     else
       @sprite.frame = Frame.Stand
 
@@ -100,6 +100,7 @@ class Player
       return
     @vx = Math.sin(@rad) * Player.V_RATIO
     @vy = Math.cos(@rad) * Player.V_RATIO
+    @sprite.rotation = 180 - @rad * 180 / Math.PI
     return
 
   stop: ->
