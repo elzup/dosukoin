@@ -45,6 +45,21 @@ class Player
     Stand: 0
     Walk: 1
 
+  updateState: (@state) ->
+    @sprite.frame = [
+      Frame.Stand
+      Frame.Walk1
+      [Frame.Damage, Frame.Damage, Frame.None, Frame.None]
+      [Frame.Walk1, Frame.None]
+    ][@state]
+
+  updateMoveState: ->
+    if @state != Player.State.Normal
+      return
+    if @moveState()
+      @sprite.frame = [Frame.Walk1, Frame.Walk2][core.frame % 2]
+    else
+      @sprite.frame = Frame.Stand
 
   constructor: (@_id, @x, @y) ->
     @init_x = @x
@@ -56,21 +71,19 @@ class Player
 
     @shake_timer = 0
     @fall_timer = 0
-    @state = Player.State.Normal
-    @preState = @state
-    @preMoveState = Player.MoveState.Stand
 
     @sprite = new Sprite(Player.width, Player.height)
     @sprite.image = core.assets['/images/chara1.png']
     @sprite.moveTo(@x, @y)
     core.rootScene.addChild(@sprite)
+    @preMoveState = 0
     @game_init()
 
   # 各ゲームの開始時の初期化
   game_init: ->
     @kill = 0
     @life = Player.LIFE_START
-    @state = Player.State.Normal
+    @updateState(Player.State.Normal)
 
   ox: ->
     @x + Player.width / 2
@@ -79,7 +92,7 @@ class Player
     @y + Player.height / 2
 
   moveState: ->
-    ((@vx | @vy) == 0) + 0
+    (@vx != 0 or @vy != 0) + 0
 
   update_dire: (@rad, @pow) ->
     if @state in [Player.State.Attack, Player.State.Fall]
@@ -98,55 +111,39 @@ class Player
 
   onenterframe: ->
     va = 1
-    @dump()
+    # @dump()
     switch @state
       when Player.State.Attack
         @shake_timer -= 1
         va = Player.VA_RATIO
         if @shake_timer <= 0
-          @state = Player.State.Normal
+          @updateState(Player.State.Normal)
           @stop()
       when Player.State.Fall
         @fall_timer -= 1
         if @fall_timer < FALL_TIMER / 2
-          @state = Player.State.Start
+          @updateState(Player.State.Start)
           @stop()
       when Player.State.Start
         @fall_timer -= 1
         if @fall_timer <= 0
-          @state = Player.State.Normal
+          @updateState(Player.State.Normal)
 
     if @state != Player.State.Fall
       @move(@x + @vx * va, @y + @vy * va)
-
-
-    # state が変わった時に frame を換える
-    if (@moveState() != @preMoveState) and (@state is Player.State.Normal)
-      # @sprite.frame = [Frame.Stand, [Frame.Walk1, Frame.Walk1, Frame.Walk2, Frame.Walk2]][@moveState()]
-      if @moveState() == 0
-        # @sprite.frame = Frame.Walk2
-        @sprite.frame = Frame.Walk1
-      else
-        @sprite.frame = Frame.Stand
-    if @state is not @preState
-      @sprite.frame = [
-        Frame.Stand
-        Frame.Walk1
-        Frame.Damage
-        Frame.Walk1
-      ][@state]
-
-    @preState = @state
+    @updateMoveState()
     @preMoveState = @moveState()
+    return
+
 
   move: (@x, @y) ->
     @sprite.moveTo(@x, @y)
 
   shake: ->
-    if @moveState() or @state != Player.State.Normal
+    if not @moveState() or @state != Player.State.Normal
       return
     @shake_timer = SHAKE_TIMER_SECOND
-    @state = Player.State.Attack
+    @updateState(Player.State.Attack)
     return
 
   fall: ->
@@ -159,7 +156,7 @@ class Player
       return
     @fall_timer = FALL_TIMER
     console.log('fall!!')
-    @state = Player.State.Fall
+    @updateState(Player.State.Fall)
     @x = @init_x
     @y = @init_y
     @sprite.tl.moveTo(@init_x, @init_y, FALL_TIMER / 2)
@@ -168,7 +165,6 @@ class Player
     console.log "die(#{@_id}): "
 
   close: ->
-    console.log("remove sprite")
     core.rootScene.removeChild(@sprite)
 
 class Game
