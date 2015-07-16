@@ -1,8 +1,21 @@
+
+MAP_M = 16
 MAP_WIDTH = 1024
+MAP_WIDTH_M = 1024 / MAP_M
 MAP_HEIGHT = 512
+MAP_HEIGHT_M = 512 / MAP_M
 
 GAME_FPS = 20
 SHAKE_TIMER_SECOND = GAME_FPS * 0.5
+
+STAGE_WATER = 3
+BlockType =
+  GRASS: 0
+  WATER: 1
+  SAND: 2
+  BLOCK_HEAD: 3
+  BLOCK: 4
+  TILE: 5
 
 core = null
 game = null
@@ -74,6 +87,7 @@ class Player
 class Game
   constructor: ->
     @players = {}
+    @setup_map()
 
   add_player: (id) ->
     # TODO: 100 -> random value
@@ -90,22 +104,41 @@ class Game
     for id, p of @players
       p.onenterframe()
 
+  setup_map: ->
+    @baseMap = [0...MAP_HEIGHT_M]
+
+    # 縁付ステージの生成
+    for j in @baseMap
+      @baseMap[j] = [0...MAP_WIDTH_M]
+      for i in @baseMap[j]
+        @baseMap[j][i] = BlockType.GRASS
+        if j < STAGE_WATER or MAP_HEIGHT_M - STAGE_WATER <= j or i < STAGE_WATER or MAP_WIDTH_M - STAGE_WATER <= i
+          @baseMap[j][i] = BlockType.WATER
+        else if j == STAGE_WATER or j == MAP_HEIGHT_M - STAGE_WATER - 1 or i == STAGE_WATER or i == MAP_WIDTH_M - STAGE_WATER - 1
+          @baseMap[j][i] = BlockType.TILE
+
+    console.log @baseMap
+    @map = new Map(MAP_M, MAP_M)
+    @map.image = core.assets['/images/map0.png']
+    @map.loadData(@baseMap)
+    core.rootScene.addChild(@map)
+
 
 $ ->
   ### enchant.js ###
   enchant()
   core = new Core(MAP_WIDTH, MAP_HEIGHT)
-  core.preload "/images/chara1.png"
+  core.preload ['/images/chara1.png', '/images/map0.png']
   core.fps = GAME_FPS
 
-  game = new Game
-
   core.onload = ->
+    game = new Game
     console.log "core onload end"
     return
 
   core.onenterframe = ->
-    game.onenterframe()
+    if game
+      game.onenterframe()
 
   core.start()
 
