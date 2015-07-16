@@ -46,6 +46,8 @@ class Player
     Stand: 0
     Walk: 1
 
+  @R = @width / 2
+
   updateState: (@state) ->
     @sprite.frame = [
       Frame.Stand
@@ -201,6 +203,32 @@ class Game
       if type == BlockType.WATER
         p.fall()
 
+      # 自分より後のプレイヤーについて衝突判定
+      start = false
+      for id2, p2 of @players
+        if start
+          Game.conflict(p, p2)
+          # p, p2 の衝突判定, 反発処理
+        if id2 == id
+          start = true
+
+  @conflict: (p1, p2)->
+    dx = p1.x - p2.x
+    dy = p1.y - p2.y
+    len = Math.sqrt(dx * dx + dy * dy)
+    d = Player.width - len
+    if d < 0
+      return
+    if len > 0
+      len = 1 / len
+    dx *= len
+    dy *= len
+    console.log("bomp!")
+    d /= 2.0
+    p1.x += dx * d
+    p1.y += dy * d
+    p2.x -= dx * d
+    p2.y -= dy * d
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
