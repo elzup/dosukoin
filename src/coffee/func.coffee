@@ -3,8 +3,8 @@ class @ElzupUtils
   @clamp = (val, max, min=0, padding=0) ->
     Math.max(Math.min(max - padding, val), min + padding)
 
-  @rand_range = (num) ->
-    Math.floor(Math.random() * num)
+  @rand_range = (min, max) ->
+    Math.floor(Math.random() * (max - min)) + min
 
   @vec_maguniture = (vx, vy) ->
     Math.sqrt(vx * vx + vy * vy)

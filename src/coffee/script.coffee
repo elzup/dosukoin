@@ -10,6 +10,7 @@ SHAKE_TIMER_SECOND = GAME_FPS * 0.5
 FALL_TIMER = GAME_FPS * 2
 
 STAGE_WATER = 3
+STAGE_SPAWN = 5
 BlockType =
   GRASS: 0
   WATER: 1
@@ -173,8 +174,14 @@ class Game
     @setup_map()
 
   add_player: (id) ->
-    # TODO: 100 -> random value
-    @players[id] = new Player(id, 100, 100)
+    mx = ElzupUtils.rand_range(STAGE_SPAWN, MAP_WIDTH_M - STAGE_SPAWN)
+    my = ElzupUtils.rand_range(STAGE_SPAWN, MAP_HEIGHT_M - STAGE_SPAWN)
+    # @baseMap[my][mx] = 6
+    @map.loadData(@baseMap)
+    x = mx * MAP_M + (MAP_M - Player.width) / 2
+    y = my * MAP_M + (MAP_M - Player.height) / 2
+    # TODO: 衝突チェック
+    @players[id] = new Player(id, x, y)
 
   remove_player: (id) ->
     if id not of @players
