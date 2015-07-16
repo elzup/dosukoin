@@ -1,18 +1,24 @@
 MAP_WIDTH = 1024
 MAP_HEIGHT = 512
 
+GAME_FPS = 20
+SHAKE_TIMER_SECOND = GAME_FPS * 0.5
+
 core = null
 game = null
 
 class Player
   @LIFE_START = 3
-  @V_RATIO = 3
+  @V_RATIO = 6
+  @VA_RATIO = 2
 
   constructor: (@_id, @x, @y) ->
     @vx = 0
     @vy = 0
     @rad = 0
     @pow = 0
+
+    @shake_timer = 0
 
     @sprite = new Sprite(32, 32)
     @sprite.image = core.assets['/images/chara1.png']
@@ -27,21 +33,37 @@ class Player
     @life = Player.LIFE_START
 
   update_dire: (@rad, @pow) ->
+    if @shake_timer > 0
+      return
     if @pow == 0
-      @vx = 0
-      @vy = 0
+      @stop()
       return
     @vx = Math.sin(@rad) * Player.V_RATIO
     @vy = Math.cos(@rad) * Player.V_RATIO
     return
 
+  stop: ->
+    @vx = 0
+    @vy = 0
+
   onenterframe: ->
-    @move(@x + @vx, @y + @vy)
+    va = 1
+    if @shake_timer > 0
+      @shake_timer -= 1
+      va = Player.VA_RATIO
+      if @shake_timer == 0
+        @sprite.frame = 0
+        @stop()
+    @move(@x + @vx * va, @y + @vy * va)
 
   move: (@x, @y) ->
     @sprite.moveTo(@x, @y)
 
   shake: ->
+    if (@vx | @vy) == 0 | @shake_timer > 0
+      return
+    @shake_timer = SHAKE_TIMER_SECOND
+    @sprite.frame = 3
     return
 
   close: ->
@@ -74,7 +96,7 @@ $ ->
   enchant()
   core = new Core(MAP_WIDTH, MAP_HEIGHT)
   core.preload "/images/chara1.png"
-  core.fps = 20
+  core.fps = GAME_FPS
 
   game = new Game
 
