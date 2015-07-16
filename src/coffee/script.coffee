@@ -7,6 +7,7 @@ MAP_HEIGHT_M = 512 / MAP_M
 
 GAME_FPS = 20
 SHAKE_TIMER_SECOND = GAME_FPS * 0.5
+FALL_TIMER = GAME_FPS * 2
 
 STAGE_WATER = 3
 BlockType =
@@ -25,31 +26,47 @@ class Player
   @V_RATIO = 6
   @VA_RATIO = 2
 
+  @width = 32
+  @height = 32
+  @State =
+    Normal: 0
+    Attack: 1
+    Fall: 2
+    Start: 3
+
+
   constructor: (@_id, @x, @y) ->
+    @init_x = @x
+    @init_y = @y
     @vx = 0
     @vy = 0
     @rad = 0
     @pow = 0
 
     @shake_timer = 0
+    @fall_timer = 0
+    @state = Player.State.Normal
 
-    @sprite = new Sprite(32, 32)
+    @sprite = new Sprite(Player.width, Player.height)
     @sprite.image = core.assets['/images/chara1.png']
     @sprite.moveTo(@x, @y)
     core.rootScene.addChild(@sprite)
-
     @game_init()
 
   # 各ゲームの開始時の初期化
   game_init: ->
     @kill = 0
     @life = Player.LIFE_START
+    @state = Player.State.Normal
+
+  ox: ->
+    @x + Player.width / 2
+
+  oy: ->
+    @y + Player.height / 2
 
   update_dire: (@rad, @pow) ->
-    if @shake_timer > 0
-      return
-    if @pow == 0
-      @stop()
+    if @state in [Player.State.Attack, Player.State.Fall]
       return
     @vx = Math.sin(@rad) * Player.V_RATIO
     @vy = Math.cos(@rad) * Player.V_RATIO
@@ -59,30 +76,74 @@ class Player
     @vx = 0
     @vy = 0
 
+  # stop_solf: ->
+  #   if @state in [Player.State.Normal, Player.State.Start]
+  #     @stop()
+
+  dump: ->
+    console.log "#{@_id} s:#{@state} fill:#{@fall_timer} atack:#{@shake_timer}\n #{@x}, #{@y}, #{@vx}, #{@vy}"
+
   onenterframe: ->
     va = 1
-    if @shake_timer > 0
-      @shake_timer -= 1
-      va = Player.VA_RATIO
-      if @shake_timer == 0
-        @sprite.frame = 0
-        @stop()
+    @dump()
+    switch @state
+      when Player.State.Attack
+        @shake_timer -= 1
+        va = Player.VA_RATIO
+        if @shake_timer == 0
+          @sprite.frame = 0
+          @state = Player.State.Normal
+          @stop()
+      when Player.State.Fall
+        @fall_timer -= 1
+        if @fall_timer < FALL_TIMER / 2
+          @state = Player.State.Start
+          @stop()
+        return
+      when Player.State.Start
+        @fall_timer -= 1
+        if @fall_timer <= 0
+          @state = Player.State.Normal
+          @sprite.frame = 0
+
     @move(@x + @vx * va, @y + @vy * va)
 
   move: (@x, @y) ->
     @sprite.moveTo(@x, @y)
 
   shake: ->
-    if (@vx | @vy) == 0 | @shake_timer > 0
+    if (@vx | @vy) == 0 | @state != Player.State.Normal
       return
     @shake_timer = SHAKE_TIMER_SECOND
     @sprite.frame = 3
+    @state = Player.State.Attack
     return
+
+  fall: ->
+    if @state == Player.State.Fall
+      return
+    if @state == Player.State.Attack
+      @shake_timer = 0
+    @stop()
+    @life -= 1
+    console.log "fall(#{@_id}): #{@life}"
+    if @life == 0
+      @die()
+      return
+    @stop()
+    @fall_timer = FALL_TIMER
+    @sprite.frame = [1, 1, 1, -1, -1 -1]
+    @x = @init_x
+    @y = @init_y
+    @state = Player.State.Fall
+    @sprite.tl.moveTo(@init_x, @init_y, FALL_TIMER / 2)
+
+  die: ->
+    console.log "die(#{@_id}): "
 
   close: ->
     console.log("remove sprite")
     core.rootScene.removeChild(@sprite)
-
 
 class Game
   constructor: ->
@@ -103,6 +164,13 @@ class Game
   onenterframe: ->
     for id, p of @players
       p.onenterframe()
+      # ステージアウトチェック
+      # console.log(p.ox(), p.oy())
+      type = @map_type(p.ox(), p.oy())
+      # console.log(type)
+      if type == BlockType.WATER
+        p.fall()
+
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
@@ -117,12 +185,20 @@ class Game
         else if j == STAGE_WATER or j == MAP_HEIGHT_M - STAGE_WATER - 1 or i == STAGE_WATER or i == MAP_WIDTH_M - STAGE_WATER - 1
           @baseMap[j][i] = BlockType.TILE
 
-    console.log @baseMap
+    # console.log @baseMap
     @map = new Map(MAP_M, MAP_M)
     @map.image = core.assets['/images/map0.png']
     @map.loadData(@baseMap)
     core.rootScene.addChild(@map)
 
+  map_type: (sx, sy) ->
+    [mx, my] = Game.map_pos(sx, sy)
+    @baseMap[my][mx]
+
+  @map_pos: (sx, sy) ->
+    mx = ElzupUtils.clamp(Math.floor(sx / MAP_M), MAP_WIDTH_M)
+    my = ElzupUtils.clamp(Math.floor(sy / MAP_M), MAP_HEIGHT_M)
+    [mx, my]
 
 $ ->
   ### enchant.js ###
@@ -174,7 +250,10 @@ $ ->
   socket.on 'move', (data) ->
     if not data.id of game.players
       return
-    game.players[data.id].update_dire(data.rad, data.pow)
+    if data.pow != 0
+      game.players[data.id].update_dire(data.rad, data.pow)
+    else
+      game.players[data.id].stop()
     console.log "move"
     console.log data
 
