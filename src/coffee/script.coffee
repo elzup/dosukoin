@@ -262,7 +262,7 @@ $ ->
     console.log game.player
 
   socket.on 'leave', (data) ->
-    if not data.id of game.players
+    if data.id not of game.players
       return
     game.remove_player(data.id)
     ($ ".user[user-id=#{data.id}]").remove()
@@ -270,7 +270,7 @@ $ ->
     console.log game.players
 
   socket.on 'move', (data) ->
-    if not data.id of game.players
+    if data.id not of game.players
       return
     if data.pow != 0
       game.players[data.id].update_dire(data.rad, data.pow)
@@ -280,7 +280,7 @@ $ ->
     console.log data
 
   socket.on 'shake', (data) ->
-    if not data.id of game.players
+    if data.id not of game.players
       return
     game.players[data.id].shake()
     console.log "shake"
