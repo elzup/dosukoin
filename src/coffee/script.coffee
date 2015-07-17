@@ -99,7 +99,7 @@ class Player
     @pos.y + Player.height / 2
 
   moveState: ->
-    (@velocity.length() == 0) + 0
+    (@velocity.length() != 0) + 0
 
   update_dire: (@rad, @pow) ->
     if @state in [Player.State.Fall]
@@ -145,6 +145,8 @@ class Player
     # NOTE: 順序は？
     @pos.add(@velocity)
     @velocity.multiply(@accelerator)
+    if @velocity.length() < 0.5
+      @velocity = new Victor(0, 0)
     @sprite.moveTo(@pos.x, @pos.y)
 
   shake: ->
@@ -152,7 +154,7 @@ class Player
       return
     @shake_timer = SHAKE_TIMER_SECOND
     # TODO: vx chceck
-    @velocity.add(new Victor(0, -1).rotate(@rad).multiply(new Victor(Player.VA_RATIO, Player.VA_RATIO)))
+    @velocity.add(new Victor(0, 1).rotate(-@rad).multiply(new Victor(Player.VA_RATIO, Player.VA_RATIO)))
     # @vx += Math.sin(@rad) * Player.VA_RATIO
     # @vy += Math.cos(@rad) * Player.VA_RATIO
     @updateState(Player.State.Attack)
@@ -220,27 +222,27 @@ class Game
           start = true
 
   @conflict: (p1, p2)->
-    dx = p1.pos.x - p2.pos.x
-    dy = p1.pos.y - p2.pos.y
-    len = Math.sqrt(dx * dx + dy * dy)
+    dv = Victor.fromObject(p1.pos).subtract(p2.pos)
+    len = dv.length()
     d = Player.width - len
     if d < 0
       return
     if len > 0
       len = 1 / len
-    dx *= len
-    dy *= len
+    # dx *= len
+    # dy *= len
     console.log("bomp!")
-    ratio = 5
+    ratio = 0.1
     d /= 2.0
 
     e = 1
     # m1 = (1 + e / 2) *
 
-    # p1.vx += dx * d * ratio
-    # p1.vy += dy * d * ratio
-    # p2.vx -= dx * d * ratio
-    # p2.vy -= dy * d * ratio
+    dv.multiply(new Victor(d * ratio, d * ratio))
+    console.log(dv)
+    console.log(p1.velocity)
+    p1.velocity.add(dv)
+    p2.velocity.subtract(dv)
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
@@ -266,10 +268,8 @@ class Game
     @baseMap[my][mx]
 
   @map_pos: (sx, sy) ->
-    console.log(sx, sy)
     mx = ElzupUtils.clamp(Math.floor(sx / MAP_M), MAP_WIDTH_M)
     my = ElzupUtils.clamp(Math.floor(sy / MAP_M), MAP_HEIGHT_M)
-    console.log(mx, my)
     [mx, my]
 
 $ ->
