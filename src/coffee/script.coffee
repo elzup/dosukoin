@@ -9,6 +9,8 @@ GAME_FPS = 20
 SHAKE_TIMER_SECOND = GAME_FPS * 0.5
 FALL_TIMER = GAME_FPS * 2
 
+PLAYER_IMAGE_SIZE = 32
+
 STAGE_WATER = 3
 STAGE_SPAWN = 5
 BlockType =
@@ -33,8 +35,8 @@ class Player
   @V_RATIO = 6
   @VA_RATIO = 20
 
-  @width = 32
-  @height = 32
+  @width = 64
+  @height = 64
 
   @State =
     Normal: 0
@@ -77,7 +79,9 @@ class Player
     @shake_timer = 0
     @fall_timer = 0
 
-    @sprite = new Sprite(Player.width, Player.height)
+    @sprite = new Sprite(PLAYER_IMAGE_SIZE, PLAYER_IMAGE_SIZE)
+    @sprite.scale(Player.width / PLAYER_IMAGE_SIZE, Player.height / PLAYER_IMAGE_SIZE)
+    # @sprite.scale(2, 2)
     @sprite.image = core.assets['/images/chara1.png']
     @sprite.moveTo(@x, @y)
     core.rootScene.addChild(@sprite)
@@ -230,11 +234,12 @@ class Game
     dx *= len
     dy *= len
     console.log("bomp!")
+    ratio = 5
     d /= 2.0
-    p1.x += dx * d
-    p1.y += dy * d
-    p2.x -= dx * d
-    p2.y -= dy * d
+    p1.vx += dx * d * ratio
+    p1.vy += dy * d * ratio
+    p2.vx -= dx * d * ratio
+    p2.vy -= dy * d * ratio
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
