@@ -66,13 +66,11 @@ class Player
     else
       @sprite.frame = Frame.Stand
 
-  constructor: (@_id, @x, @y) ->
-    @init_x = @x
-    @init_y = @y
-    @vx = 0
-    @vy = 0
-    @ax = 0.8
-    @ay = 0.8
+  constructor: (@_id, @pos) ->
+    @init_pos = new Victor(0, 0).copy(@pos)
+    @velocity = new Victor(0, 0)
+    @accelerator = new Victor(0.8, 0.8)
+    console.log(@accelerator)
     @rad = 0
     @pow = 0
 
@@ -83,7 +81,7 @@ class Player
     @sprite.scale(Player.width / PLAYER_IMAGE_SIZE, Player.height / PLAYER_IMAGE_SIZE)
     # @sprite.scale(2, 2)
     @sprite.image = core.assets['/images/chara1.png']
-    @sprite.moveTo(@x, @y)
+    @sprite.moveTo(@pos.x, @pos.y)
     core.rootScene.addChild(@sprite)
     @preMoveState = 0
     @game_init()
@@ -95,30 +93,30 @@ class Player
     @updateState(Player.State.Normal)
 
   ox: ->
-    @x + Player.width / 2
+    @pos.x + Player.width / 2
 
   oy: ->
-    @y + Player.height / 2
+    @pos.y + Player.height / 2
 
   moveState: ->
-    (@vx != 0 or @vy != 0) + 0
+    (@velocity.length() == 0) + 0
 
   update_dire: (@rad, @pow) ->
     if @state in [Player.State.Fall]
       return
     # 上限指定
-    @vx += Math.sin(@rad) * Player.V_RATIO * @pow / 90
-    @vy += Math.cos(@rad) * Player.V_RATIO * @pow / 90
+    mr = Player.V_RATIO * @pow / 90
+    @velocity.add new Victor(0, 1).rotate(-@rad).multiply(new Victor(mr, mr))
     @sprite.rotation = 180 - @rad * 180 / Math.PI
     return
 
   stop: ->
-    @vx = 0
+    @velocity = new Victor(0, 0)
     @vy = 0
     @shake_timer = 0
 
   dump: ->
-    console.log "#{@_id} s:#{@state} fill:#{@fall_timer} atack:#{@shake_timer}\n #{@x}, #{@y}, #{@vx}, #{@vy}"
+    console.log "#{@_id} s:#{@state} fill:#{@fall_timer} atack:#{@shake_timer}\n #{@pos}, #{@velocity}"
 
   onenterframe: ->
     # @dump()
@@ -145,18 +143,18 @@ class Player
 
   move: () ->
     # NOTE: 順序は？
-    @x += @vx
-    @y += @vy
-    @vx *= @ax
-    @vy *= @ay
-    @sprite.moveTo(@x, @y)
+    @pos.add(@velocity)
+    @velocity.multiply(@accelerator)
+    @sprite.moveTo(@pos.x, @pos.y)
 
   shake: ->
     if not @moveState() or @state != Player.State.Normal
       return
     @shake_timer = SHAKE_TIMER_SECOND
-    @vx += Math.sin(@rad) * Player.VA_RATIO
-    @vy += Math.cos(@rad) * Player.VA_RATIO
+    # TODO: vx chceck
+    @velocity.add(new Victor(0, -1).rotate(@rad).multiply(new Victor(Player.VA_RATIO, Player.VA_RATIO)))
+    # @vx += Math.sin(@rad) * Player.VA_RATIO
+    # @vy += Math.cos(@rad) * Player.VA_RATIO
     @updateState(Player.State.Attack)
     return
 
@@ -171,9 +169,8 @@ class Player
     @fall_timer = FALL_TIMER
     console.log('fall!!')
     @updateState(Player.State.Fall)
-    @x = @init_x
-    @y = @init_y
-    @sprite.tl.moveTo(@init_x, @init_y, FALL_TIMER / 2)
+    @pos.copy @init_pos
+    @sprite.tl.moveTo(@pos.x, @pos.y, FALL_TIMER / 2)
 
   die: ->
     console.log "die(#{@_id}): "
@@ -190,11 +187,11 @@ class Game
     mx = ElzupUtils.rand_range(STAGE_SPAWN, MAP_WIDTH_M - STAGE_SPAWN)
     my = ElzupUtils.rand_range(STAGE_SPAWN, MAP_HEIGHT_M - STAGE_SPAWN)
     # @baseMap[my][mx] = 6
-    @map.loadData(@baseMap)
+    # @map.loadData(@baseMap)
     x = mx * MAP_M + (MAP_M - Player.width) / 2
     y = my * MAP_M + (MAP_M - Player.height) / 2
     # TODO: 衝突チェック
-    @players[id] = new Player(id, x, y)
+    @players[id] = new Player(id, new Victor(x, y))
 
   remove_player: (id) ->
     if id not of @players
@@ -223,8 +220,8 @@ class Game
           start = true
 
   @conflict: (p1, p2)->
-    dx = p1.x - p2.x
-    dy = p1.y - p2.y
+    dx = p1.pos.x - p2.pos.x
+    dy = p1.pos.y - p2.pos.y
     len = Math.sqrt(dx * dx + dy * dy)
     d = Player.width - len
     if d < 0
@@ -236,10 +233,14 @@ class Game
     console.log("bomp!")
     ratio = 5
     d /= 2.0
-    p1.vx += dx * d * ratio
-    p1.vy += dy * d * ratio
-    p2.vx -= dx * d * ratio
-    p2.vy -= dy * d * ratio
+
+    e = 1
+    # m1 = (1 + e / 2) *
+
+    # p1.vx += dx * d * ratio
+    # p1.vy += dy * d * ratio
+    # p2.vx -= dx * d * ratio
+    # p2.vy -= dy * d * ratio
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
@@ -265,8 +266,10 @@ class Game
     @baseMap[my][mx]
 
   @map_pos: (sx, sy) ->
+    console.log(sx, sy)
     mx = ElzupUtils.clamp(Math.floor(sx / MAP_M), MAP_WIDTH_M)
     my = ElzupUtils.clamp(Math.floor(sy / MAP_M), MAP_HEIGHT_M)
+    console.log(mx, my)
     [mx, my]
 
 $ ->

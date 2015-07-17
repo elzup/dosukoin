@@ -82,4 +82,4 @@ crashlytics-build.properties
 *.js
 
 # temp escape
-./public/javascripts/gShake.js
+public/javascripts/lib/
