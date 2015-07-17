@@ -31,7 +31,7 @@ game = null
 class Player
   @LIFE_START = 3
   @V_RATIO = 6
-  @VA_RATIO = 2
+  @VA_RATIO = 20
 
   @width = 32
   @height = 32
@@ -69,6 +69,8 @@ class Player
     @init_y = @y
     @vx = 0
     @vy = 0
+    @ax = 0.8
+    @ay = 0.8
     @rad = 0
     @pow = 0
 
@@ -98,10 +100,11 @@ class Player
     (@vx != 0 or @vy != 0) + 0
 
   update_dire: (@rad, @pow) ->
-    if @state in [Player.State.Attack, Player.State.Fall]
+    if @state in [Player.State.Fall]
       return
-    @vx = Math.sin(@rad) * Player.V_RATIO
-    @vy = Math.cos(@rad) * Player.V_RATIO
+    # 上限指定
+    @vx += Math.sin(@rad) * Player.V_RATIO * @pow / 90
+    @vy += Math.cos(@rad) * Player.V_RATIO * @pow / 90
     @sprite.rotation = 180 - @rad * 180 / Math.PI
     return
 
@@ -114,39 +117,42 @@ class Player
     console.log "#{@_id} s:#{@state} fill:#{@fall_timer} atack:#{@shake_timer}\n #{@x}, #{@y}, #{@vx}, #{@vy}"
 
   onenterframe: ->
-    va = 1
     # @dump()
     switch @state
       when Player.State.Attack
         @shake_timer -= 1
-        va = Player.VA_RATIO
         if @shake_timer <= 0
           @updateState(Player.State.Normal)
-          @stop()
       when Player.State.Fall
         @fall_timer -= 1
         if @fall_timer < FALL_TIMER / 2
           @updateState(Player.State.Start)
-          @stop()
       when Player.State.Start
         @fall_timer -= 1
         if @fall_timer <= 0
           @updateState(Player.State.Normal)
 
     if @state != Player.State.Fall
-      @move(@x + @vx * va, @y + @vy * va)
+      @move()
+
     @updateMoveState()
     @preMoveState = @moveState()
     return
 
-
-  move: (@x, @y) ->
+  move: () ->
+    # NOTE: 順序は？
+    @x += @vx
+    @y += @vy
+    @vx *= @ax
+    @vy *= @ay
     @sprite.moveTo(@x, @y)
 
   shake: ->
     if not @moveState() or @state != Player.State.Normal
       return
     @shake_timer = SHAKE_TIMER_SECOND
+    @vx += Math.sin(@rad) * Player.VA_RATIO
+    @vy += Math.cos(@rad) * Player.VA_RATIO
     @updateState(Player.State.Attack)
     return
 
@@ -310,8 +316,6 @@ $ ->
       return
     if data.pow != 0
       game.players[data.id].update_dire(data.rad, data.pow)
-    else
-      game.players[data.id].stop()
     console.log "move"
     console.log data
 
