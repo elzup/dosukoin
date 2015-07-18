@@ -38,7 +38,7 @@ Frame =
   Walk: 1
   Attack: 2
   Damage: 3
-  None: -1
+  None: -100
 
 core = null
 game = null
@@ -65,19 +65,20 @@ class Player
 
   updateState: (@state) ->
     @sprite.frame = [
-      Frame.Stand
-      Frame.Attack
-      [Frame.Damage, Frame.Damage, Frame.None, Frame.None]
-      [Frame.Walk, Frame.None]
+      Frame.Stand + @fs
+      Frame.Attack + @fs
+      [Frame.Damage + @fs, Frame.Damage + @fs, Frame.None + @fs, Frame.None + @fs]
+      [Frame.Walk + @fs, Frame.None + @fs]
     ][@state]
 
   updateMoveState: ->
     if @state != Player.State.Normal
       return
     if @moveState()
-      @sprite.frame = [Frame.Stand, Frame.Walk][core.frame % 8 / 4]
+      @sprite.frame = [Frame.Stand + @fs, Frame.Walk + @fs][ElzupUtils.period(core.frame, 8)]
+
     else
-      @sprite.frame = Frame.Stand
+      @sprite.frame = Frame.Stand + @fs
 
   constructor: (@_id, @pos) ->
     @init_pos = new Victor(0, 0).copy(@pos)
@@ -89,6 +90,11 @@ class Player
 
     @shake_timer = 0
     @fall_timer = 0
+    # TODO: adapt user type
+    # @type = SEASON.SPRING
+    @type = ElzupUtils.rand_range(0, 4)
+    console.log "type: " + @type
+    @fs = @type * 5
 
     @sprite = new Sprite(PLAYER_IMAGE_SIZE, PLAYER_IMAGE_SIZE)
     @sprite.scale(Player.width / PLAYER_IMAGE_SIZE, Player.height / PLAYER_IMAGE_SIZE)
