@@ -46,7 +46,7 @@ Frame =
   Attack: 2
   Damage: 3
   Super: 4
-  None: -100
+  None: -1
 
 core = null
 game = null
@@ -72,13 +72,13 @@ class Player
   @R = @width / 2
 
   updateState: (@state) ->
-    if @state != Player.State.Fall and @is_super
+    if not @isFall() and @is_super
       @sprite.frame = [Frame.Super + @fs, Frame.Super + @fs, Frame.Attack, Frame.Attack]
       return
     @sprite.frame = [
       Frame.Stand + @fs
       Frame.Attack + @fs
-      [Frame.Damage + @fs, Frame.Damage + @fs, Frame.None + @fs, Frame.None + @fs]
+      [Frame.Damage + @fs, Frame.Damage + @fs, Frame.None, Frame.None]
       [Frame.Walk + @fs, Frame.None + @fs]
     ][@state]
 
@@ -134,8 +134,11 @@ class Player
   moveState: ->
     (@velocity.length() != 0) + 0
 
+  isFall: ->
+    @state is Player.State.Fall
+
   update_dire: (@rad, @pow) ->
-    if @state in [Player.State.Fall]
+    if @isFall()
       return
     # 上限指定
     mr = Player.V_RATIO * @pow / 90
@@ -167,7 +170,7 @@ class Player
         if @fall_timer <= 0
           @updateState(Player.State.Normal)
 
-    if @state != Player.State.Fall
+    if not @isFall()
       @move()
 
     @updateMoveState()
@@ -194,7 +197,7 @@ class Player
     return
 
   fall: ->
-    if @state == Player.State.Fall
+    if @isFall()
       return
     @stop()
     @life -= 1
@@ -249,13 +252,16 @@ class Game
       if type == BlockType.WATER
         p.fall()
       # 自分より後のプレイヤーについて衝突判定
+      if p.isFall()
+        continue
+      start = false
       for id2, p2 of @players
-        if start
+        if start and not p2.isFall()
           Game.conflict(p, p2)
           # p, p2 の衝突判定, 反発処理
         if id2 == id
           start = true
-    console.log core.frame
+    # console.log core.frame
     if core.frame % Game.generation_delay == 0
       @step_generation()
 
@@ -271,16 +277,17 @@ class Game
     @generation % 4
 
   @conflict: (p1, p2)->
+    # console.log p1, p2
     dv = Victor.fromObject(p1.pos).subtract(p2.pos)
     len = dv.length()
+    # console.log "len", len
     d = Player.width - len
-    if d < 0
+    if d <= 0
       return
     if len > 0
       len = 1 / len
     # dx *= len
     # dy *= len
-    console.log("bomp!")
     ratio = 0.1
     d /= 2.0
     # TODO: create reflection
