@@ -5,6 +5,19 @@ MAP_WIDTH_M = MAP_WIDTH / MAP_M
 MAP_HEIGHT = 720
 MAP_HEIGHT_M = MAP_HEIGHT / MAP_M
 
+FRAME_WIDTH = 200
+GAME_WIDTH = MAP_HEIGHT + FRAME_WIDTH
+GAME_HEIGHT = MAP_HEIGHT
+
+CLOCK_WIDTH = FRAME_WIDTH
+CLOCK_HEIGHT = FRAME_WIDTH
+
+SEASON =
+  SPRING: 0
+  SUMMER: 1
+  AUTUMN: 2
+  WINTER: 3
+
 GAME_FPS = 20
 SHAKE_TIMER_SECOND = GAME_FPS * 0.5
 FALL_TIMER = GAME_FPS * 2
@@ -181,9 +194,13 @@ class Player
     core.rootScene.removeChild(@sprite)
 
 class Game
+  @generation_delay = 50
+
   constructor: ->
     @players = {}
     @setup_map()
+    @setup_clock()
+    @generation = 0
 
   add_player: (id) ->
     mx = ElzupUtils.rand_range(STAGE_SPAWN, MAP_WIDTH_M - STAGE_SPAWN)
@@ -220,6 +237,17 @@ class Game
           # p, p2 の衝突判定, 反発処理
         if id2 == id
           start = true
+    if core.frame % Game.generation_delay == 0
+      @step_generation()
+
+  step_generation: ->
+    @generation = (@generation + 1) % 4
+    # NOTE: debug
+    console.log("step season :" + @season())
+
+  season: ->
+    @generation % 4
+    # TODO: プレイヤーへの反映
 
   @conflict: (p1, p2)->
     dv = Victor.fromObject(p1.pos).subtract(p2.pos)
@@ -234,10 +262,9 @@ class Game
     console.log("bomp!")
     ratio = 0.1
     d /= 2.0
-
+    # TODO: create reflection
     e = 1
     # m1 = (1 + e / 2) *
-
     dv.multiply(new Victor(d * ratio, d * ratio))
     console.log(dv)
     console.log(p1.velocity)
@@ -263,6 +290,14 @@ class Game
     @map.loadData(@baseMap)
     core.rootScene.addChild(@map)
 
+  setup_clock: ->
+    @clock = new Sprite(CLOCK_WIDTH, CLOCK_HEIGHT)
+    @clock.image = core.assets['/images/clock.png']
+    @clock.moveTo(MAP_WIDTH, - CLOCK_HEIGHT / 2)
+    @clock.tl.rotateTo(360, Game.generation_delay * 4).rotateTo(0, 0).loop()
+    console.log(@clock)
+    core.rootScene.addChild(@clock)
+
   map_type: (sx, sy) ->
     [mx, my] = Game.map_pos(sx, sy)
     @baseMap[my][mx]
@@ -275,8 +310,8 @@ class Game
 $ ->
   ### enchant.js ###
   enchant()
-  core = new Core(MAP_WIDTH, MAP_HEIGHT)
-  core.preload ['/images/chara1.png', '/images/map0.png']
+  core = new Core(GAME_WIDTH, GAME_HEIGHT)
+  core.preload ['/images/chara1.png', '/images/map0.png', '/images/clock.png']
   core.fps = GAME_FPS
 
   core.onload = ->
