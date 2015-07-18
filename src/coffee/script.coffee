@@ -18,6 +18,13 @@ SEASON =
   AUTUMN: 2
   WINTER: 3
 
+SEASON_TABLE = [
+  [SEASON.AUTUMN, SEASON.WINTER]
+  [SEASON.WINTER, SEASON.SPRING]
+  [SEASON.SPRING, SEASON.SUMMER]
+  [SEASON.SUMMER, SEASON.AUTUMN]
+]
+
 GAME_FPS = 20
 SHAKE_TIMER_SECOND = GAME_FPS * 0.5
 FALL_TIMER = GAME_FPS * 2
@@ -38,6 +45,7 @@ Frame =
   Walk: 1
   Attack: 2
   Damage: 3
+  Super: 4
   None: -100
 
 core = null
@@ -64,6 +72,9 @@ class Player
   @R = @width / 2
 
   updateState: (@state) ->
+    if @state != Player.State.Fall and @is_super
+      @sprite.frame = [Frame.Super + @fs, Frame.Super + @fs, Frame.Attack, Frame.Attack]
+      return
     @sprite.frame = [
       Frame.Stand + @fs
       Frame.Attack + @fs
@@ -74,9 +85,11 @@ class Player
   updateMoveState: ->
     if @state != Player.State.Normal
       return
+    if @is_super
+      @sprite.frame = [Frame.Super + @fs, Frame.Attack + @fs][ElzupUtils.period(core.frame, 4)]
+      return
     if @moveState()
       @sprite.frame = [Frame.Stand + @fs, Frame.Walk + @fs][ElzupUtils.period(core.frame, 8)]
-
     else
       @sprite.frame = Frame.Stand + @fs
 
@@ -95,6 +108,7 @@ class Player
     @type = ElzupUtils.rand_range(0, 4)
     console.log "type: " + @type
     @fs = @type * 5
+    @is_super = false
 
     @sprite = new Sprite(PLAYER_IMAGE_SIZE, PLAYER_IMAGE_SIZE)
     @sprite.scale(Player.width / PLAYER_IMAGE_SIZE, Player.height / PLAYER_IMAGE_SIZE)
@@ -200,7 +214,7 @@ class Player
     core.rootScene.removeChild(@sprite)
 
 class Game
-  @generation_delay = 50
+  @generation_delay = GAME_FPS * 5
 
   constructor: ->
     @players = {}
@@ -234,26 +248,27 @@ class Game
       # console.log(type)
       if type == BlockType.WATER
         p.fall()
-
       # 自分より後のプレイヤーについて衝突判定
-      start = false
       for id2, p2 of @players
         if start
           Game.conflict(p, p2)
           # p, p2 の衝突判定, 反発処理
         if id2 == id
           start = true
+    console.log core.frame
     if core.frame % Game.generation_delay == 0
       @step_generation()
 
   step_generation: ->
     @generation = (@generation + 1) % 4
+    @clock.tl.rotateBy(90, Game.generation_delay)
+    for id, p of @players
+      p.is_super = p.type in SEASON_TABLE[@generation]
     # NOTE: debug
     console.log("step season :" + @season())
 
   season: ->
     @generation % 4
-    # TODO: プレイヤーへの反映
 
   @conflict: (p1, p2)->
     dv = Victor.fromObject(p1.pos).subtract(p2.pos)
@@ -289,7 +304,6 @@ class Game
           @baseMap[j][i] = BlockType.WATER
         else if j == STAGE_WATER or j == MAP_HEIGHT_M - STAGE_WATER - 1 or i == STAGE_WATER or i == MAP_WIDTH_M - STAGE_WATER - 1
           @baseMap[j][i] = BlockType.TILE
-
     # console.log @baseMap
     @map = new Map(MAP_M, MAP_M)
     @map.image = core.assets['/images/map0.png']
@@ -300,7 +314,10 @@ class Game
     @clock = new Sprite(CLOCK_WIDTH, CLOCK_HEIGHT)
     @clock.image = core.assets['/images/clock.png']
     @clock.moveTo(MAP_WIDTH, - CLOCK_HEIGHT / 2)
-    @clock.tl.rotateTo(360, Game.generation_delay * 4).rotateTo(0, 0).loop()
+    # 春が半分出てる状態から始める
+    @clock.rotate(135)
+    # @clock.rotation = 135 * 2 * Math.PI / 360
+
     console.log(@clock)
     core.rootScene.addChild(@clock)
 
