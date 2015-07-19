@@ -69,7 +69,7 @@ class Player
     Stand: 0
     Walk: 1
 
-  @M = 0.1
+  @M = 0.01
 
   @R = @width / 2
 
@@ -99,6 +99,7 @@ class Player
     @init_pos = new Victor(0, 0).copy(@pos)
     @velocity = new Victor(0, 0)
     @accelerator = new Victor(0.8, 0.8)
+    # @accelerator = new Victor(0.99, 0.99)
     console.log(@accelerator)
     @rad = 0
     @pow = 0
@@ -140,6 +141,12 @@ class Player
 
   isFall: ->
     @state is Player.State.Fall
+
+  set_super: (@is_super) ->
+    if @is_super
+      @m = Player.M * 3
+    else
+      @m = Player.M
 
   update_dire: (@rad, @pow) ->
     if @isFall()
@@ -275,15 +282,9 @@ class Game
     @generation = (@generation + 1) % 4
     @clock.tl.rotateBy(90, Game.generation_delay)
     for id, p of @players
-      p.is_super = p.type in SEASON_TABLE[@generation]
+      p.set_super(p.type in SEASON_TABLE[@generation])
     # NOTE: debug
     console.log("step season :" + @season())
-
-  set_super: (@is_super) ->
-    if @is_super
-      @m = Player.M * 2
-    else
-      @m = Player.M
 
   season: ->
     @generation % 4
@@ -299,17 +300,16 @@ class Game
 
     abVec.normalize()
     distance = Player.width - len
-    syncVec = abVec.multiply(new Victor(distance / 2, distance / 2))
+    syncVec = new Victor(0, 0).copy(abVec).multiply(new Victor(distance / 2, distance / 2))
     p0.pos.add(syncVec)
     p1.pos.subtract(syncVec)
     # TODO: create reflection
-    e = 0.1
+    e = 1.0
 
-    m1 = abVec.dot(new Victor(0, 0).copy(p1.velocity).subtract(p0.velocity)) * p1.m * e / (p0.m + p1.m)
-    m2 = abVec.dot(new Victor(0, 0).copy(p0.velocity).subtract(p1.velocity)) * p0.m * e / (p0.m + p1.m)
+    m1 = new Victor(0, 0).copy(p1.velocity).subtract(p0.velocity).dot(abVec) * p1.m * (e + 1) / (p0.m + p1.m)
+    m2 = new Victor(0, 0).copy(p0.velocity).subtract(p1.velocity).dot(abVec) * p0.m * (e + 1) / (p0.m + p1.m)
     p0.velocity.add(new Victor(0, 0).copy(abVec).multiply(new Victor(m1, m1)))
     p1.velocity.add(new Victor(0, 0).copy(abVec).multiply(new Victor(m2, m2)))
-    console.log p0, p1
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
