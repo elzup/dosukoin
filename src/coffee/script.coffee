@@ -69,17 +69,19 @@ class Player
     Stand: 0
     Walk: 1
 
+  @M = 1.0
+
   @R = @width / 2
 
   updateState: (@state) ->
     if not @isFall() and @is_super
-      @sprite.frame = [Frame.Super + @fs, Frame.Super + @fs, Frame.Attack, Frame.Attack]
+      @sprite.frame = [Frame.Super + @fs, Frame.Super + @fs, Frame.Attack + @fs, Frame.Attack + @fs]
       return
     @sprite.frame = [
       Frame.Stand + @fs
       Frame.Attack + @fs
       [Frame.Damage + @fs, Frame.Damage + @fs, Frame.None, Frame.None]
-      [Frame.Walk + @fs, Frame.None + @fs]
+      [Frame.Walk + @fs, Frame.None]
     ][@state]
 
   updateMoveState: ->
@@ -109,6 +111,8 @@ class Player
     console.log "type: " + @type
     @fs = @type * 5
     @is_super = false
+
+    @m = Player.M
 
     @sprite = new Sprite(PLAYER_IMAGE_SIZE, PLAYER_IMAGE_SIZE)
     @sprite.scale(Player.width / PLAYER_IMAGE_SIZE, Player.height / PLAYER_IMAGE_SIZE)
@@ -232,7 +236,7 @@ class Game
     # @map.loadData(@baseMap)
     x = mx * MAP_M + (MAP_M - Player.width) / 2
     y = my * MAP_M + (MAP_M - Player.height) / 2
-    # TODO: 衝突チェック
+    # TODO: 出現時衝突チェック
     @players[id] = new Player(id, new Victor(x, y))
 
   remove_player: (id) ->
@@ -261,6 +265,7 @@ class Game
           # p, p2 の衝突判定, 反発処理
         if id2 == id
           start = true
+    # DEBUGGER: display global frame
     # console.log core.frame
     if core.frame % Game.generation_delay == 0
       @step_generation()
@@ -272,6 +277,12 @@ class Game
       p.is_super = p.type in SEASON_TABLE[@generation]
     # NOTE: debug
     console.log("step season :" + @season())
+
+  set_super: (@is_super) ->
+    if @is_super
+      @m = Player.M * 2
+    else
+      @m = Player.M
 
   season: ->
     @generation % 4
@@ -293,6 +304,7 @@ class Game
     # TODO: create reflection
     e = 1
     # m1 = (1 + e / 2) *
+    # TODO:
     dv.multiply(new Victor(d * ratio, d * ratio))
     console.log(dv)
     console.log(p1.velocity)
@@ -301,7 +313,6 @@ class Game
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
-
     # 縁付ステージの生成
     for j in @baseMap
       @baseMap[j] = [0...MAP_WIDTH_M]
