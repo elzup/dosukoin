@@ -69,7 +69,7 @@ class Player
     Stand: 0
     Walk: 1
 
-  @M = 1.0
+  @M = 0.1
 
   @R = @width / 2
 
@@ -181,9 +181,10 @@ class Player
     @preMoveState = @moveState()
     return
 
-  move: () ->
+  move: ->
     # NOTE: 順序は？
     @pos.add(@velocity)
+    @pos.limit(MAP_WIDTH, 1.0)
     @velocity.multiply(@accelerator)
     if @velocity.length() < 0.5
       @velocity = new Victor(0, 0)
@@ -287,29 +288,28 @@ class Game
   season: ->
     @generation % 4
 
-  @conflict: (p1, p2)->
-    # console.log p1, p2
-    dv = Victor.fromObject(p1.pos).subtract(p2.pos)
-    len = dv.length()
+  @conflict: (p0, p1)->
+    # console.log p0, p1
+    abVec = Victor.fromObject(p0.pos).subtract(p1.pos)
+    len = abVec.length()
     # console.log "len", len
     d = Player.width - len
     if d <= 0
       return
-    if len > 0
-      len = 1 / len
-    # dx *= len
-    # dy *= len
-    ratio = 0.1
-    d /= 2.0
+
+    abVec.normalize()
+    distance = Player.width - len
+    syncVec = abVec.multiply(new Victor(distance / 2, distance / 2))
+    p0.pos.add(syncVec)
+    p1.pos.subtract(syncVec)
     # TODO: create reflection
-    e = 1
-    # m1 = (1 + e / 2) *
-    # TODO:
-    dv.multiply(new Victor(d * ratio, d * ratio))
-    console.log(dv)
-    console.log(p1.velocity)
-    p1.velocity.add(dv)
-    p2.velocity.subtract(dv)
+    e = 0.1
+
+    m1 = abVec.dot(new Victor(0, 0).copy(p1.velocity).subtract(p0.velocity)) * p1.m * e / (p0.m + p1.m)
+    m2 = abVec.dot(new Victor(0, 0).copy(p0.velocity).subtract(p1.velocity)) * p0.m * e / (p0.m + p1.m)
+    p0.velocity.add(new Victor(0, 0).copy(abVec).multiply(new Victor(m1, m1)))
+    p1.velocity.add(new Victor(0, 0).copy(abVec).multiply(new Victor(m2, m2)))
+    console.log p0, p1
 
   setup_map: ->
     @baseMap = [0...MAP_HEIGHT_M]
@@ -341,11 +341,15 @@ class Game
 
   map_type: (sx, sy) ->
     [mx, my] = Game.map_pos(sx, sy)
+    # TODO: 何故か読み込めない
+    if not @baseMap[my]
+      return BlockType.WATER
     @baseMap[my][mx]
 
   @map_pos: (sx, sy) ->
     mx = ElzupUtils.clamp(Math.floor(sx / MAP_M), MAP_WIDTH_M)
     my = ElzupUtils.clamp(Math.floor(sy / MAP_M), MAP_HEIGHT_M)
+    # console.log(sx, sy, " -> ", mx, my)
     [mx, my]
 
 $ ->
